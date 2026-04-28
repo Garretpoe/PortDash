@@ -15,11 +15,44 @@ initial_investment = st.number_input("INTIAL INVESTMENT AMOUNT ($):", min_value=
 
 tickers_input = st.text_input("ENTER TICKERS (COMMA SEPARATED):", "AAPL, MSFT, GOOGL, SPY, QQQ")
 TICKERS = [t.strip() for t in tickers_input.split(",")]
+valid_tickers = []
+invalid_tickers = []
+is_valid_input = True
+
+for ticker in TICKERS:
+    try:
+        data = yf.Ticker(ticker).history(period="5d")
+
+        if data.empty:
+            invalid_tickers.append(ticker)
+            is_valid_input = False
+        else:
+            valid_tickers.append(ticker)
+
+    except:
+        invalid_tickers.append(ticker)
+        is_valid_input = False
+
+if not is_valid_input:
+    st.error(f"INVALID TICKERS: {', '.join(invalid_tickers)}. PLEASE CORRECT BEFORE PROCEEDING.")
+    st.stop()
 
 # Step 2: create slider for each ticker
 weight_constraints = {}
 for t in TICKERS:
     weight_constraints[t] = st.slider(f"WEIGHT CONSTRAINTS FOR {t}",0.0,1.0,(0.0,0.1), key=f"slider_{t}")
+
+total_weight = sum(max_w for min_w, max_w in weight_constraints.values())
+if total_weight < 1:
+    st.error(f"INCREASE MAX WEIGHTS TO AT LEAST 100%. CURRENTLY: {total_weight*100:.1f}%.")
+    st.stop()
+
+min_sum = sum([min_w for (min_w, _) in weight_constraints.values()])
+
+if min_sum > 1:
+    st.error(f"DECREASE MIN WEIGHTS TO AT MOST 100%. CURRENTLY: {min_sum*100:.1f}%.")
+    st.stop()
+
 
 #Ensure Alignment
 aligned_tickers = sorted(weight_constraints.items())
@@ -119,10 +152,13 @@ if st.button("OPTIMIZE"):
     
     percentile_fig = px.line(percentile_df, x="Day", y="Portfolio Value", color="Percentile", title="MONTE CARLO PERCENTILES")
 
+    pl_p5 =p5[-1] - initial_investment
+    pl_p50 =p50[-1] - initial_investment
+    pl_p95 =p95[-1] - initial_investment
     st.plotly_chart(percentile_fig, use_container_width=True)
     col1, col2, col3 = st.columns(3)
 
-    col1.metric("5% Worst Case", f"${p5[-1]:,.0f}")
-    col2.metric("Median Outcome", f"${p50[-1]:,.0f}")
-    col3.metric("95% Best Case", f"${p95[-1]:,.0f}")
+    col1.metric("5% Worst Case", f"{((p5[-1]-initial_investment)/initial_investment)*100:.2f}%",round(pl_p5, 2))
+    col2.metric("Median Outcome", f"{((p50[-1]-initial_investment)/initial_investment)*100:.2f}%",round(pl_p50, 2))
+    col3.metric("95% Best Case", f"{((p95[-1]-initial_investment)/initial_investment)*100:.2f}%",round(pl_p95, 2))
 
