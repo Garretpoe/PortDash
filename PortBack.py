@@ -19,7 +19,6 @@ def run_optimizer(TICKERS, weight_constraints, risk_free_rate=0.03, period="5y")
 
     weight_bounds = [(weight_constraints[ticker][0], weight_constraints[ticker][1]) for ticker in TICKERS]
 
-
     # Efficient Frontier
     ef = EfficientFrontier(mu, S, weight_bounds=weight_bounds)
 
@@ -29,12 +28,22 @@ def run_optimizer(TICKERS, weight_constraints, risk_free_rate=0.03, period="5y")
     weights = ef.clean_weights()
     ret, vol, sharpe = ef.portfolio_performance(risk_free_rate=risk_free_rate)
 
+    weights_array = np.array(list(weights.values()))
+    asset_vols = np.sqrt(np.diag(S.values))
+
+    portfolio_vol = np.sqrt(weights_array.T @ S.values @ weights_array)
+
+    div_ratio = (weights_array @ asset_vols) / portfolio_vol
+
+    hhi = np.sum(weights_array ** 2)
 
     return {
         "weights": weights,
         "expected_return": ret,
         "volatility": vol,
         "sharpe_ratio": sharpe,
+        "diversification_ratio": div_ratio,
+        "herfindahl_hirschman_index": hhi,
         "prices": prices
     }
 

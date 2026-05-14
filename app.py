@@ -8,7 +8,7 @@ import yfinance as yf
 #OPTIMIZER IS ONLY GRABBING DATA TO THE EARLIEST DATE POSSIBLE, (i.e CAVA is young so only pulls days since IPO, this is an issue if other stocks have 5 years of data)
 
 st.title("PORTFOLIO TERMINAL")
-st.caption("INTSTITUTIONAL FRAMEWORK. RETAIL ACCESS.")
+st.caption("CONSTRAINED MVO MODEL. SET CONSTRAINTS TO CURRENT PORTFOLIO WEIGHTS FOR JUST PERFORMANCE ANALYSIS")
 
 # Step 1: input tickers
 initial_investment = st.number_input("INTIAL INVESTMENT AMOUNT ($):", min_value=100, max_value=100000000, value=10000)
@@ -40,7 +40,7 @@ if not is_valid_input:
 # Step 2: create slider for each ticker
 weight_constraints = {}
 for t in TICKERS:
-    weight_constraints[t] = st.slider(f"WEIGHT CONSTRAINTS FOR {t}",0.0,1.0,(0.0,0.1), key=f"slider_{t}")
+    weight_constraints[t] = st.slider(f"WEIGHT CONSTRAINTS FOR {t}",0.0,1.0,(0.0,0.2), key=f"slider_{t}")
 
 total_weight = sum(max_w for min_w, max_w in weight_constraints.values())
 if total_weight < 1:
@@ -119,6 +119,10 @@ if st.button("OPTIMIZE"):
     )
 
     st.plotly_chart(corr_fig, use_container_width=True)
+
+    col1, col2 = st.columns(2)
+    col1.metric("DIVERSIFICATION RATIO", f"{results['diversification_ratio']:.2f}")
+    col2.metric("HERFINDAHL-HIRSCHMAN INDEX", f"{results['herfindahl_hirschman_index']:.2f}")
 
     mc_paths = monte_carlo_simulation(results["prices"], results["weights"], initial_investment)
 
