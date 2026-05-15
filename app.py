@@ -120,9 +120,7 @@ if st.button("OPTIMIZE"):
 
     st.plotly_chart(corr_fig, use_container_width=True)
 
-    """col1, col2 = st.columns(2)
-    col1.metric("DIVERSIFICATION RATIO", f"{results['diversification_ratio']:.2f}")
-    col2.metric("HERFINDAHL-HIRSCHMAN INDEX", f"{results['herfindahl_hirschman_index']:.2f}")"""
+
 
     mc_paths = monte_carlo_simulation(results["prices"], results["weights"], initial_investment)
 
