@@ -89,16 +89,27 @@ if st.button("OPTIMIZE"):
     hist_returns = results["prices"].pct_change().dropna()
 
     portfolio_returns = hist_returns[weights.index].dot(weights)
-    spy_returns = hist_returns["SPY"]
+    benchmark_returns = yf.download("SPY", period="5y", auto_adjust=True, progress=False)["Close"].pct_change().dropna()
+    benchmark_returns = benchmark_returns.squeeze()
+    portfolio_returns = portfolio_returns.squeeze()
+
 
     perf_df = pd.DataFrame({
     "PORTFOLIO": portfolio_returns,
-    "SPY": spy_returns
+    "SPY": benchmark_returns
     })
     perf_df = (1 + perf_df).cumprod() - 1
     perf_df = perf_df.reset_index().melt(id_vars="Date", var_name="Series", value_name="CUMULATIVE RETURN")
     perf_fig = px.line(perf_df, x="Date", y="CUMULATIVE RETURN", color="Series", title="HISTORICAL PERFORMANCE VS. BENCHMARK")
     st.plotly_chart(perf_fig, use_container_width=True)
+
+    active_returns = portfolio_returns - benchmark_returns
+    tracking_error = active_returns.std() * np.sqrt(252)
+    information_ratio = (portfolio_returns.mean() - benchmark_returns.mean()) / active_returns.std()
+    col1, col2 = st.columns(2)
+    col1.metric("INFORMATION RATIO", f"{information_ratio:.2f}")
+    col2.metric("TRACKING ERROR", f"{tracking_error:.2%}")
+
 
     # Correlation matrix using only portfolio assets
     corr_matrix = hist_returns[weights.index].corr()
@@ -120,6 +131,10 @@ if st.button("OPTIMIZE"):
 
     st.plotly_chart(corr_fig, use_container_width=True)
 
+    st.markdown("DIVERSIFICATION METRICS")
+    col1, col2 = st.columns(2)
+    col1.metric("DIVERSIFICATION RATIO", f"{results['diversification_ratio']:.2f}")
+    col2.metric("HERFINDAHL-HIRSCHMAN INDEX", f"{results['herfindahl_hirschman_index']:.2f}")
 
 
     mc_paths = monte_carlo_simulation(results["prices"], results["weights"], initial_investment)
